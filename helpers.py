@@ -6,7 +6,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 
-
 def get_links(url):
     urls = []
 
@@ -45,8 +44,17 @@ def get_hotel_data(list_link):
     hotels = []
     hotel_names = []
     hotel_descriptions = []
+    hotel_ratings = []
 
     soup = extract_soup_with_selenium(list_link)
+    
+    rating_elems = soup.find_all('div', class_='sqs-block code-block sqs-block-code')
+    if rating_elems and len(rating_elems) > 0:
+        for rating_elem in rating_elems:
+            stars_elems = rating_elem.find_all('span', class_='fa fa-star checked')
+            stars = len(stars_elems)
+            hotel_ratings.append(stars)
+
     block_elems = soup.find_all('div', 'sqs-html-content')
     if block_elems and len(block_elems) > 0:
         for block_elem in block_elems:
@@ -66,16 +74,26 @@ def get_hotel_data(list_link):
     if hotel_descriptions and (len(hotel_descriptions) > 10):
         hotel_descriptions.pop(0)
 
+    counter = 0
     for hotel_description in hotel_descriptions:
+        if 'These are the best hotel gyms'  in hotel_description:
+            continue
+
         hotel = {
             'name': '',
-            'description': ''
+            'description': '',
+            'rating': 0
         }
 
         for hotel_name in hotel_names:
             if hotel_name in hotel_description:
+                counter += 1
                 hotel['name'] = hotel_name
                 hotel['description'] = hotel_description
+
+                if counter < len(hotel_ratings):
+                    hotel['rating'] = hotel_ratings[counter]
+
                 hotels.append(hotel)
                 continue
 
